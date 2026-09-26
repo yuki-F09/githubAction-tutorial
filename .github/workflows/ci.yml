@@ -1,0 +1,48 @@
+name: CI
+
+# PRの作成・更新時 と mainブランチへのプッシュ時に実行
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  ci:
+    name: Lint, Type Check & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      # リポジトリのコードをチェックアウト
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Node.js のセットアップ（npm キャッシュも有効化）
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      # 1. 依存関係のインストール
+      - name: Install dependencies
+        run: npm ci
+
+      # 2. ESLint によるコード品質チェック
+      - name: Run ESLint
+        run: npm run lint
+
+      # 3. TypeScript の型チェック
+      - name: Run TypeScript type check
+        run: npx tsc --noEmit
+
+      # 4. ビルドの成功確認
+      # build スクリプトは dotenv-cli を使用しているため、
+      # CI では環境変数を GitHub Secrets から直接渡して next build を実行する
+      - name: Build
+        run: npx next build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
